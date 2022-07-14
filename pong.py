@@ -1,10 +1,9 @@
 import numpy as np
 from PIL import Image
 from os.path import dirname,abspath
-from math import floor
+from math import floor, tan, atan
 import cv2
 import time
-from math import tan, atan
 
 class Pong:
     def __init__(self):
@@ -16,7 +15,7 @@ class Pong:
         self.board_h = 200
         self.board_w = floor(self.board_h/5)
 
-        self.ball_dim = self.board_w
+        self.ball_dim = 14 # 25x25
 
         self.im = np.zeros((self.page_h, self.page_w, 3), dtype=np.uint8)
 
@@ -25,24 +24,31 @@ class Pong:
         self.score = (0,0)
         self.playing = False
 
-    def draw(self, x, y, w, h, color=255):
-        if self.page_h < y + h:
+    def draw(self, x: int, y: int, w: int, h: int, color: int = 255):
+        if y + h  > self.page_h:
             if y > self.page_h:
-                raise Exception("y out of range: {} > {}".format(y, self.page_h))
-                
+                raise RuntimeError("y out of range: {} > {}".format(y, self.page_h))  
             h = self.page_h - y
+        elif y - h < 0:
+            if y < 0:
+                raise RuntimeError("y out of range: {} < 0".format(y))  
+            h = y
 
-        if self.page_w < x + w:
+        if x + w > self.page_w:
 
             if x > self.page_w:
-                raise Exception("x out of range: {} > {}".format(x, self.page_w))
-                
+                raise RuntimeError("x out of range: {} > {}".format(x, self.page_w))
             w = self.page_w - x
-        self.im[y:y+h, x:x+w] = [color,color,color]
+        elif x - w < 0:
+            if x < 0:
+                raise RuntimeError("x out of range: {} < 0".format(x))  
+            w = x
+
+        self.im[y-h:y+h, x-w:x+w] = [color,color,color]
 
     def draw_board(self, x, y, player):
         self.positions[player] = (x,y)
-        self.draw(floor(x), floor(y), self.board_w, self.board_h)
+        self.draw(floor(x), floor(y), (self.board_w - 1)/2, (self.board_h - 1)/2)
 
     def draw_ball(self, prevx, prevy,):
         x,y = self.positions["b"]
@@ -52,9 +58,9 @@ class Pong:
     def setup(self):
         # self.draw_board(0, (p.page_h - p.board_h)/2, "p1")
         # self.draw_board(self.page_w - self.board_w, (p.page_h - p.board_h)/2, "p2")
-        self.positions["b"] = ((self.page_w - self.ball_dim)/2, (self.page_h - self.ball_dim)/2)
+        self.positions["b"] = ((self.page_w)/2, (self.page_h)/2)
         self.draw_ball(0,0)
-        self.velocity = (self.page_w/ 20, self.page_h/20)
+        self.velocity = (self.page_w/ 19, self.page_h/ -20)
         cv2.namedWindow("pong", cv2.WINDOW_AUTOSIZE)
         cv2.imshow("pong", self.im)
         cv2.waitKey(3)
@@ -70,22 +76,20 @@ class Pong:
             x,y = floor(x + vx), floor(y + vy)
             print(x,y)
             # left out of bounds
-            if x <= 0:
-                # x1, y1, vx1, vy1 = x1, y1, vx1, vy1
-                if x < 0:
-                    x1, y1 = 0, floor(y + (tan(atan(vy/vx)) * (-x)))
+            if x - self.ball_dim <= 0:
+                if x - self.ball_dim < 0:
+                    x1, y1 = self.ball_dim, floor(y + (tan(atan(vy/vx)) * (-x + self.ball_dim)))
                 vx1, vy1 = -vx, vy
             
             # top out of bounds
-            if y <= 0:
-                # x1, y1, vx1, vy1 = x1, y1, vx1, vy1
+            if y - self.ball_dim <= 0:
                 dx = 0
-                if y < 0:
-                    dx = (-y) / tan(atan(vy/vx))
+                if y - self.ball_dim < 0:
+                    dx = (-y + self.ball_dim) / tan(atan(vy/vx))
 
-                    #Top-left edge case
+                    #Top-left edge case, check if new x is out of bounds
                     if floor(x + dx) >= 0:
-                        x1, y1 = floor(x + dx), 0
+                        x1, y1 = floor(x + dx), self.ball_dim
                 if floor(x + dx) > 0:
                     vx1, vy1 = vx, -vy
                 elif floor(x + dx) == 0:
@@ -99,7 +103,7 @@ class Pong:
                     
                     #Top-right edge case
                     if floor(y + dy) >= 0:
-                        x1, y1 = floor(y + dy), self.page_w - self.ball_dim
+                        x1, y1 = self.page_w - self.ball_dim, floor(y + dy)
                 if floor(y + dy) > 0:
                     vx1, vy1 = -vx, vy
                 elif floor(y + dy) == 0:
@@ -108,14 +112,14 @@ class Pong:
             # bottom out of bounds
             if y + self.ball_dim >= self.page_h:
                 if y + self.ball_dim > self.page_h:
-                    dx = (y + self.ball_dim - self.page_h) / tan(atan(vx/vy))
-                    x1, y1 = floor(x + dx + self.ball_dim), self.page_h - self.ball_dim
+                    dx = (y + self.ball_dim - self.page_h) * tan(atan(vy/vx))
+                    x1, y1 = floor(x + dx), self.page_h - self.ball_dim
 
-                    #Top-left edge case
-                    if floor(x + dx) >= 0:
+                    #Bottom-right and bottom-left edge case
+                    if floor(x + dx) <= self.board_w - self.ball_dim and floor(x + dx) >= 0:
                         x1 = floor(x + dx)
-                        # y1 = 0 if 
-                if floor(x + dx) > 0:
+                        y1 = self.page_h - self.ball_dim
+                if floor(x + dx) < self.board_w - self.ball_dim or floor(x + dx) > 0:
                     vx1, vy1 = vx, -vy
                 elif floor(x + dx) == 0:
                     vx1, vy1 = -vx, -vy
