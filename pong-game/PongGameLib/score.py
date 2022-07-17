@@ -1,15 +1,17 @@
-from gameDefintions import GameAction 
+from gameDefintions import GameAction  
 
-class Store():
+class Store:
     def __init__(self):
         self.scoreRightPlayer = 0
         self.scoreLeftPlayer = 0
 
-    def storePossiblePlayerPoint(self,action):
+    def storePossiblePlayerPoint(self, action: GameAction):
         if action == GameAction.LeftPlayerScored:
-            self.scoreLeftPlayer=self.scoreLeftPlayer+1
+            self.scoreLeftPlayer = self.scoreLeftPlayer + 1
             return True
+        
         if action == GameAction.RightPlayerScored:
-            self.scoreRightPlayer=self.scoreRightPlayer+1
+            self.scoreRightPlayer = self.scoreRightPlayer + 1
             return True
+        
         return False
