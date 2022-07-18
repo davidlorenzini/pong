@@ -23,11 +23,12 @@ class Settings:
     def __init__(self):
         self.bar_height = 200
         self.bar_width = 20
-        self.bar_speed = 20
+        self.bar_speed = 50
         
         self.ball_dimension = self.bar_width
         self.ball_speed = 5
         self.ball_accelerator = 1
+        self.max_ball_speed = 4 * self.ball_speed
 
-        self.window_height = 640
+        self.window_height = 600
         self.window_width = 1024

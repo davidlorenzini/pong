@@ -4,7 +4,7 @@ from Settings import Settings, Collision, Action, Direction
 
 class Ball(Settings):
     def __init__(self):
-        super().__init__()
+        Settings.__init__(self)
         self.angle = 0
         self.position_x = int((self.window_width - (self.ball_dimension - 1))/2)
         self.position_y = int((self.window_height - (self.ball_dimension - 1))/2)
@@ -18,15 +18,15 @@ class Ball(Settings):
         
     def _random_angle(self):
         # Range: [-pi/4 | pi/4]
-        # -45° bis 45°
+        # -45 deg bis 45 deg
         angle = random.random() * pi/2 - pi/4
-        if random.random() * 2 > 1:
+        if random.random() * 2 >= 1:
             # Range: [3/4*pi | 5/4*pi]
-            # (90+45)° bis (180+45)°
+            # (90+45)deg bis (180+45) deg
             return angle + pi
         return angle
 
-    def move_ball(self, player_left_y: int, player_right_y: int):
+    def move_ball(self, player_left_y, player_right_y):
         self.position_x += cos(self.angle) * self.ball_speed
         # Y-direction has to be flipped, as (0,0) is top-left, not bottom-left
         self.position_y -= sin(self.angle) * self.ball_speed
@@ -34,6 +34,7 @@ class Ball(Settings):
         res = self._check_collision()
         if res:
             case, direction = res
+            print(case)
             if case == Collision.VERTICAL:
                 # Express angle/vector as complex number a + ib
                 # Mirror along x-axis (conjugate, a - ib)
@@ -42,7 +43,7 @@ class Ball(Settings):
                 a = cos(self.angle)
                 b = -sin(self.angle)
                 self.angle = atan2(b,a)
-                self.ball_speed += self.ball_accelerator
+                if self.ball_speed < self.max_ball_speed: self.ball_speed += self.ball_accelerator
                 # print("Vertical collision, old angle: {}, new angle: {}".format(prev_angle/pi *180, self.angle/pi *180))
             
             elif case == Collision.HORIZONTAL:
@@ -51,13 +52,14 @@ class Ball(Settings):
                 elif res == Action.PLAYER_RIGHT_SCORED: return Action.PLAYER_RIGHT_SCORED
 
                 self.make_prediction() 
+                print(self.next_horizontal_collision)
 
                 # Mirror it along x-axis and accross the origin (-conjugate, -a + ib)
                 prev_angle = self.angle
                 a = -cos(self.angle)
                 b = sin(self.angle)
                 self.angle = atan2(b,a)
-                self.ball_speed += self.ball_accelerator
+                if self.ball_speed < self.max_ball_speed: self.ball_speed += self.ball_accelerator
                 
                 # print("Horizontal collision, old angle: {}, new angle: {}".format(prev_angle/pi *180, self.angle/pi *180))
         return Action.GAME_CONTINUES
@@ -67,13 +69,15 @@ class Ball(Settings):
         position_y = self.position_y
         angle = self.angle
         ball_speed = self.ball_speed
+        print("prediction1")
         while True:
             position_x += cos(angle) * self.ball_speed
             # Y-direction has to be flipped, as (0,0) is top-left, not bottom-left
             position_y -= sin(angle) * self.ball_speed
             res = self._check_collision(position_x, position_y)
             if res:
-                case, _ = res
+                case, direction = res
+                print(case)
                 if case == Collision.VERTICAL:
                     a = cos(angle)
                     b = -sin(angle)
@@ -82,9 +86,10 @@ class Ball(Settings):
                 
                 elif case == Collision.HORIZONTAL:
                     self.next_horizontal_collision = position_y
+                    ("prediction")
                     break
 
-    def _check_for_score(self, direction: Direction, player_left_y: int, player_right_y: int):
+    def _check_for_score(self, direction, player_left_y, player_right_y):
         if direction == Direction.LEFT:
             if (
                 self.position_y + int((self.ball_dimension - 1)/2) < player_left_y - int((self.bar_height - 1)/2) or

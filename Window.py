@@ -1,14 +1,22 @@
 import numpy as np
 import cv2
-
 from Settings import Settings
+from cv_bridge import CvBridge, CvBridgeError
+import rospy
+import intera_interface
+from sensor_msgs.msg import Image
 
 class Window(Settings):
     def __init__(self):
-        super().__init__()
+        Settings.__init__(self)
         self.image = np.zeros((self.window_height, self.window_width, 3), dtype=np.uint8) 
+        #rospy.init_node("Pong_display", anonymous=True)
+        self.image_pub = rospy.Publisher("/robot/head_display", Image, latch=True, queue_size=10)
+        self.display = intera_interface.HeadDisplay()
+        self.rate = rospy.Rate(60)
 
     def show_image(self):
+        # Show image in window
         cv2.imshow("Pong", self.image)
         key = cv2.waitKey(3)
         if key != -1: 
@@ -16,12 +24,22 @@ class Window(Settings):
             if chr(key) == "q":
                 return False
         return True
+
+    def display_image(self):
+        # Show image on display
+        if rospy.is_shutdown():
+            return False
+        bridge = CvBridge()
+        img = bridge.cv2_to_imgmsg(self.image, encoding="8UC3")
+        self.image_pub.publish(img)
+        self.rate.sleep()
+        return True
     
     def close_image(self, wait = 0):
         cv2.waitKey(wait)
         cv2.destroyAllWindows()
 
-    def draw_right_player(self, position_y: int):
+    def draw_right_player(self, position_y):
         cv2.rectangle(
             self.image,
             (self.window_width - self.bar_width, int(position_y - self.bar_height/2)),
@@ -30,7 +48,7 @@ class Window(Settings):
             -1
         )
 
-    def draw_left_player(self, position_y: int):
+    def draw_left_player(self, position_y):
         cv2.rectangle(
             self.image,
             (0, int(position_y - (self.bar_height - 1)/2)),
@@ -39,7 +57,7 @@ class Window(Settings):
             -1
         )
 
-    def draw_ball(self, position_x: int, position_y: int):
+    def draw_ball(self, position_x, position_y):
         cv2.rectangle(
             self.image,
             (int(position_x - (self.ball_dimension - 1)/2), int(position_y - (self.ball_dimension - 1)/2)),
@@ -48,7 +66,7 @@ class Window(Settings):
             -1
         )
 
-    def draw_score(self, score_left: int, score_right: int):
+    def draw_score(self, score_left, score_right):
         font = cv2.FONT_HERSHEY_PLAIN
         text = str(score_left) + ":" + str(score_right)
         text_size = cv2.getTextSize(text, font, 2, 2)[0]
