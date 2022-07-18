@@ -26,9 +26,9 @@ class Settings:
         self.bar_speed = 50
         
         self.ball_dimension = self.bar_width
-        self.ball_speed = 5
-        self.ball_accelerator = 1
-        self.max_ball_speed = 4 * self.ball_speed
+        self.ball_speed = 20
+        self.ball_accelerator = 2
+        self.max_ball_speed = 2 * self.ball_speed
 
         self.window_height = 600
         self.window_width = 1024

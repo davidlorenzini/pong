@@ -1,25 +1,22 @@
 from Settings import Settings, Direction
 
 class Player(Settings):
-    def __init__(self, nav=None):
+    def __init__(self, controller=None):
         Settings.__init__(self)
         self._actual_position = int(self.window_height/2)
 
-        if nav:
-            self.nav = nav
-            self.wheel_state = self.nav.get_wheel_state()
+        if controller:
+            self.controller = controller
+            self.state = self.controller.get_state()
 
     def move_player(self):
-        if not hasattr(self, "nav"):
-            return self._actual_position
-        
-        new_wheel_state = self.nav.get_wheel_state()
-        if new_wheel_state < self.wheel_state:
+        new_state = self.controller.get_state()
+        if new_state < self.state:
             self._actual_position -= self.bar_speed
-        elif new_wheel_state > self.wheel_state:
+        elif new_state > self.state:
             self._actual_position += self.bar_speed
         
-        self.wheel_state = new_wheel_state
+        self.state = new_state
         self._check_position()
         return self._actual_position
 

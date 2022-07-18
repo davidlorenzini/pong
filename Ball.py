@@ -34,7 +34,6 @@ class Ball(Settings):
         res = self._check_collision()
         if res:
             case, direction = res
-            print(case)
             if case == Collision.VERTICAL:
                 # Express angle/vector as complex number a + ib
                 # Mirror along x-axis (conjugate, a - ib)
@@ -51,8 +50,7 @@ class Ball(Settings):
                 if res == Action.PLAYER_LEFT_SCORED: return Action.PLAYER_LEFT_SCORED
                 elif res == Action.PLAYER_RIGHT_SCORED: return Action.PLAYER_RIGHT_SCORED
 
-                self.make_prediction() 
-                print(self.next_horizontal_collision)
+                
 
                 # Mirror it along x-axis and accross the origin (-conjugate, -a + ib)
                 prev_angle = self.angle
@@ -64,30 +62,36 @@ class Ball(Settings):
                 # print("Horizontal collision, old angle: {}, new angle: {}".format(prev_angle/pi *180, self.angle/pi *180))
         return Action.GAME_CONTINUES
 
-    def make_prediction(self):
+    def make_prediction(self, player):
         position_x = self.position_x
         position_y = self.position_y
         angle = self.angle
         ball_speed = self.ball_speed
-        print("prediction1")
+        
         while True:
             position_x += cos(angle) * self.ball_speed
             # Y-direction has to be flipped, as (0,0) is top-left, not bottom-left
             position_y -= sin(angle) * self.ball_speed
+        
             res = self._check_collision(position_x, position_y)
-            if res:
-                case, direction = res
-                print(case)
+            if res != False:
+                case = res[0]
                 if case == Collision.VERTICAL:
                     a = cos(angle)
                     b = -sin(angle)
                     angle = atan2(b,a)
-                    ball_speed += self.ball_accelerator
+                    if ball_speed < self.max_ball_speed: ball_speed += self.ball_accelerator
                 
                 elif case == Collision.HORIZONTAL:
-                    self.next_horizontal_collision = position_y
-                    ("prediction")
-                    break
+                    if position_x < self.window_width/2 and player == "left":
+                        return position_y
+                    elif position_x > self.window_width/2 and player == "right":
+                        return position_y
+                    else:
+                        a = -cos(angle)
+                        b = sin(angle)
+                        angle = atan2(b,a)
+                        if ball_speed < self.max_ball_speed: ball_speed += self.ball_accelerator
 
     def _check_for_score(self, direction, player_left_y, player_right_y):
         if direction == Direction.LEFT:
