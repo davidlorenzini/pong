@@ -11,7 +11,11 @@ class Player(Settings):
 
     def move_player(self):
         new_state = self.controller.get_state()
-        if new_state < self.state:
+        if new_state == 0 and self.state == 255:
+            self._actual_position += self.bar_speed
+        elif new_state == 255 and self.state == 0:
+            self._actual_position -= self.bar_speed
+        elif new_state < self.state:
             self._actual_position -= self.bar_speed
         elif new_state > self.state:
             self._actual_position += self.bar_speed
@@ -21,11 +25,11 @@ class Player(Settings):
         return self._actual_position
 
     def move_player_auto(self, position_y):
-        if self._actual_position < position_y - self.bar_speed:
-            self._actual_position += Direction.DOWN * self.bar_speed
+        if self._actual_position < position_y - int(self.bar_speed/2):
+            self._actual_position += Direction.DOWN * int(self.bar_speed/2)
 
-        elif self._actual_position > position_y + self.bar_speed:
-            self._actual_position += Direction.UP * self.bar_speed
+        elif self._actual_position > position_y + int(self.bar_speed/2):
+            self._actual_position += Direction.UP * int(self.bar_speed/2)
             
         self._check_position()
         return self._actual_position

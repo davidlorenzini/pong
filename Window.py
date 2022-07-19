@@ -69,11 +69,18 @@ class Window(Settings):
         )
 
     def draw_ball(self, position_x, position_y):
-        cv2.rectangle(
-            self.image,
-            (int(position_x - (self.ball_dimension - 1)/2), int(position_y - (self.ball_dimension - 1)/2)),
-            (int(position_x + (self.ball_dimension - 1)/2), int(position_y + (self.ball_dimension - 1)/2)),
-            (255, 255, 255),
+        #cv2.rectangle(
+        #    self.image,
+        #    (int(position_x - (self.ball_dimension - 1)/2), int(position_y - (self.ball_dimension - 1)/2)),
+        #    (int(position_x + (self.ball_dimension - 1)/2), int(position_y + (self.ball_dimension - 1)/2)),
+        #    (255, 255, 255),
+        #    -1
+        #)
+        cv2.circle(
+            self.image, 
+            (int(position_x), int(position_y)), 
+            (self.ball_dimension-1)/2, 
+            (255, 255, 255), 
             -1
         )
 

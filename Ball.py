@@ -8,7 +8,11 @@ class Ball(Settings):
         self.angle = 0
         self.position_x = int((self.window_width - (self.ball_dimension - 1))/2)
         self.position_y = int((self.window_height - (self.ball_dimension - 1))/2)
+
         self.original_speed = self.ball_speed
+
+        self.left_prediction = False
+        self.right_prediction = False
 
     def reset_ball(self):
         self.position_x = int((self.window_width - (self.ball_dimension - 1))/2)
@@ -17,12 +21,10 @@ class Ball(Settings):
         self.ball_speed = self.original_speed
         
     def _random_angle(self):
-        # Range: [-pi/4 | pi/4]
-        # -45 deg bis 45 deg
-        angle = random.random() * pi/2 - pi/4
-        if random.random() * 2 >= 1:
-            # Range: [3/4*pi | 5/4*pi]
-            # (90+45)deg bis (180+45) deg
+        # Range [pi/12 | pi/4] und [-pi/4 | -pi/12]
+        angle = random.random() * pi/6 + pi/12
+        angle = angle * ((-1) ** random.randint(0,1))
+        if random.random() >= 0.5:
             return angle + pi
         return angle
 
@@ -30,36 +32,48 @@ class Ball(Settings):
         self.position_x += cos(self.angle) * self.ball_speed
         # Y-direction has to be flipped, as (0,0) is top-left, not bottom-left
         self.position_y -= sin(self.angle) * self.ball_speed
-        # print("x: {}, y: {}".format(self.position_x, self.position_y))
+        
         res = self._check_collision()
         if res:
             case, direction = res
             if case == Collision.VERTICAL:
                 # Express angle/vector as complex number a + ib
                 # Mirror along x-axis (conjugate, a - ib)
-
-                prev_angle = self.angle
                 a = cos(self.angle)
                 b = -sin(self.angle)
                 self.angle = atan2(b,a)
+                
+                #Increase speed of ball
                 if self.ball_speed < self.max_ball_speed: self.ball_speed += self.ball_accelerator
-                # print("Vertical collision, old angle: {}, new angle: {}".format(prev_angle/pi *180, self.angle/pi *180))
+                
+                # Make sure ball doesnt get out of bounds
+                if self.position_y > self.window_height / 2:
+                    self.position_y = self.window_height - int((self.ball_dimension - 1) / 2)
+                else:
+                    self.position_y = int((self.ball_dimension - 1) / 2)
             
             elif case == Collision.HORIZONTAL:
                 res = self._check_for_score(direction, player_left_y, player_right_y)
                 if res == Action.PLAYER_LEFT_SCORED: return Action.PLAYER_LEFT_SCORED
                 elif res == Action.PLAYER_RIGHT_SCORED: return Action.PLAYER_RIGHT_SCORED
 
-                
+                # Reset predictions
+                self.left_prediction = False
+                self.right_prediction = False                
 
                 # Mirror it along x-axis and accross the origin (-conjugate, -a + ib)
                 prev_angle = self.angle
                 a = -cos(self.angle)
                 b = sin(self.angle)
                 self.angle = atan2(b,a)
+
                 if self.ball_speed < self.max_ball_speed: self.ball_speed += self.ball_accelerator
-                
-                # print("Horizontal collision, old angle: {}, new angle: {}".format(prev_angle/pi *180, self.angle/pi *180))
+
+                if self.position_x > self.window_width / 2:
+                    self.position_x = self.window_width - self.bar_width - int((self.ball_dimension - 1) / 2)
+                else:
+                    self.position_x = self.bar_width + int((self.ball_dimension - 1) / 2)
+                    
         return Action.GAME_CONTINUES
 
     def make_prediction(self, player):
@@ -67,10 +81,16 @@ class Ball(Settings):
         position_y = self.position_y
         angle = self.angle
         ball_speed = self.ball_speed
-        
+
+        # Return cached prediction, save the while loop
+        if player == "left" and type(self.left_prediction) is int:
+            return self.left_prediction
+        if player == "right" and type(self.right_prediction) is int:
+            return self.right_prediction
+
         while True:
+            # Basically self.move_ball
             position_x += cos(angle) * self.ball_speed
-            # Y-direction has to be flipped, as (0,0) is top-left, not bottom-left
             position_y -= sin(angle) * self.ball_speed
         
             res = self._check_collision(position_x, position_y)
@@ -80,18 +100,32 @@ class Ball(Settings):
                     a = cos(angle)
                     b = -sin(angle)
                     angle = atan2(b,a)
+
                     if ball_speed < self.max_ball_speed: ball_speed += self.ball_accelerator
+                    if position_y > self.window_height / 2:
+                        position_y = self.window_height - int((self.ball_dimension - 1) / 2)
+                    else:
+                        position_y = int((self.ball_dimension - 1) / 2)
                 
                 elif case == Collision.HORIZONTAL:
+                    # Save prediction
                     if position_x < self.window_width/2 and player == "left":
+                        self.left_prediction = position_y
                         return position_y
                     elif position_x > self.window_width/2 and player == "right":
+                        self.right_prediction = position_y
                         return position_y
                     else:
                         a = -cos(angle)
                         b = sin(angle)
                         angle = atan2(b,a)
+
                         if ball_speed < self.max_ball_speed: ball_speed += self.ball_accelerator
+
+                        if position_x > self.window_width / 2:
+                            position_x = self.window_width - self.bar_width - int((self.ball_dimension - 1) / 2)
+                        else:
+                            position_x = self.bar_width + int((self.ball_dimension - 1) / 2)
 
     def _check_for_score(self, direction, player_left_y, player_right_y):
         if direction == Direction.LEFT:

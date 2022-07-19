@@ -1,4 +1,5 @@
 env = "Sawyer"
+import time
 from Player import Player
 from Ball import Ball
 from Window import Window
@@ -15,7 +16,7 @@ except ModuleNotFoundError:
 
 class Game:
     def __init__(self, left_auto, right_auto, use_keyboard):
-        # Set controls fro left player
+        # Set controls for left player
         if use_keyboard: left_controller = Keyboard("w", "s")
         else: left_controller = Navigator("right")
         self.left_player = Player(left_controller)
@@ -80,7 +81,16 @@ class Game:
             res = self.screen.display_image()
             if type(res) is bool:
                 # Close the game
-                if not res: return True
+                if not res: 
+                    return True
+                
+                # Reset Game
+                elif self.left_player.controller.reset:
+                    self.left_player.controller.reset = False
+                    break
+                elif self.right_player.controller.reset:
+                    self.right_player.controller.reset = False
+                    break
             elif env == "PC":
                 # Send key to controller
                 if self.left_player.controller.key_pressed(res) == True: return True
@@ -93,7 +103,7 @@ class Game:
             elif action == Action.PLAYER_RIGHT_SCORED:
                 self.score.player_right_scored()
                 break
-            
+        
         self.setup()
 
 

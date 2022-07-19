@@ -9,9 +9,17 @@ class Navigator:
         #rospy.init_node("Nav_wheel", anonymous=True)
         self.nav = intera_interface.Navigator()
         self.wheel = button +"_wheel"
+        res = self.nav.register_callback(self.button_pressed, button + "_button_back")
+        self.reset = False
 
     def get_state(self):
         return self.nav.get_wheel_state(self.wheel)
+    
+    def button_pressed(self, arg):
+        if arg == 1:
+            #Button press
+            self.reset = True
+
 
 class Keyboard:
     def __init__(self, up_key="w", down_key="s"):
